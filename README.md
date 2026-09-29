@@ -1,6 +1,6 @@
 # Library Information System (LIS)
 
-A single-branch library management web application built with **Python · Flask · SQLAlchemy · SQLite · Bootstrap 5**.
+A single-branch library management web application built with **Python · Flask · SQLAlchemy · Supabase (PostgreSQL) / SQLite · Bootstrap 5**.
 
 ---
 
