@@ -5,7 +5,7 @@ from functools import wraps
 from dotenv import load_dotenv
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, session, flash, abort
+    url_for, session, flash, abort, send_from_directory
 )
 from models import db, Member, Book, Issue, Reservation
 
@@ -26,13 +26,28 @@ database_url = (
 )
 
 if database_url:
-    # SQLAlchemy requires postgresql:// instead of postgres://
+    # Normalize postgres:// prefix to postgresql://
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    # If postgresql:// is provided without an explicit driver, ensure compatibility
+    if database_url.startswith("postgresql://") and not database_url.startswith("postgresql+"):
+        try:
+            import psycopg
+        except ImportError:
+            try:
+                import psycopg2
+                database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            except ImportError:
+                pass
+
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 else:
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(BASE_DIR, 'lis.db')}"
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -160,9 +175,7 @@ def inject_role():
 # ─────────────────────────────────────────────
 @app.route("/")
 def index():
-    if get_session_role():
-        return redirect(url_for("search"))
-    return redirect(url_for("login"))
+    return send_from_directory(BASE_DIR, "index.html")
 
 
 @app.route("/login", methods=["GET", "POST"])

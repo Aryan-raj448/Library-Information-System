@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Library Information System (LIS)</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --lis-dark: #1a1f36;
+      --lis-accent: #c0392b;
+      --lis-bg: #f8f9fa;
+    }
+    body {
+      background-color: var(--lis-bg);
+      color: #333;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .navbar {
+      background-color: var(--lis-dark) !important;
+    }
+    .navbar-brand, .nav-link {
+      color: #fff !important;
+    }
+    .nav-link:hover {
+      color: #f0c27f !important;
+    }
+    .role-badge {
+      font-size: 0.75rem;
+      background: var(--lis-accent);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 12px;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+    .btn-lis-primary {
+      background-color: var(--lis-dark);
+      color: #fff;
+      border: none;
+    }
+    .btn-lis-primary:hover {
+      background-color: #2e3557;
+      color: #fff;
+    }
+    .card {
+      border: none;
+      border-radius: 0.75rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .tab-section {
+      display: none;
+    }
+    .tab-section.active {
+      display: block;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: #fff !important; }
+      .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+    }
+    .print-only { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark no-print sticky-top shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center" href="#" onclick="showSection('catalogue'); return false;">
+        <i class="bi bi-book-half me-2 fs-4 text-warning"></i>LIS Portal
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0" id="navLinks">
+          <li class="nav-item">
+            <a class="nav-link active" id="nav-catalogue" href="#" onclick="showSection('catalogue'); return false;">
+              <i class="bi bi-search me-1"></i>Catalogue
+            </a>
+          </li>
+          <!-- Clerk Links -->
+          <li class="nav-item clerk-only d-none">
+            <a class="nav-link" id="nav-issue" href="#" onclick="showSection('issue'); return false;">
+              <i class="bi bi-arrow-up-circle me-1"></i>Issue
+            </a>
+          </li>
+          <li class="nav-item clerk-only d-none">
+            <a class="nav-link" id="nav-return" href="#" onclick="showSection('return'); return false;">
+              <i class="bi bi-arrow-down-circle me-1"></i>Return
+            </a>
+          </li>
+          <li class="nav-item clerk-only d-none">
+            <a class="nav-link" id="nav-manage-books" href="#" onclick="showSection('manage-books'); return false;">
+              <i class="bi bi-journal-plus me-1"></i>Manage Books
+            </a>
+          </li>
+          <!-- Librarian Links -->
+          <li class="nav-item librarian-only d-none">
+            <a class="nav-link" id="nav-members" href="#" onclick="showSection('members'); return false;">
+              <i class="bi bi-people me-1"></i>Members
+            </a>
+          </li>
+          <li class="nav-item librarian-only d-none">
+            <a class="nav-link" id="nav-reminders" href="#" onclick="showSection('reminders'); return false;">
+              <i class="bi bi-bell me-1"></i>Reminders
+            </a>
+          </li>
+          <li class="nav-item librarian-only d-none">
+            <a class="nav-link" id="nav-unused" href="#" onclick="showSection('unused'); return false;">
+              <i class="bi bi-archive me-1"></i>Unused Books
+            </a>
+          </li>
+        </ul>
+
+        <!-- User Role Display / Auth -->
+        <div class="d-flex align-items-center">
+          <div id="authStatusGuest" class="d-flex gap-2">
+            <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
+              <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+            </button>
+          </div>
+          <div id="authStatusUser" class="d-none align-items-center gap-3">
+            <span class="text-light small">
+              <span id="userRoleIcon"></span>
+              <strong id="userName">User</strong>
+              <span class="role-badge" id="userRoleBadge">Role</span>
+            </span>
+            <button class="btn btn-outline-light btn-sm" onclick="logout()">
+              <i class="bi bi-box-arrow-right me-1"></i>Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Global Alert Banner -->
+  <div class="container mt-3 no-print">
+    <div id="alertPlaceholder"></div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="container py-4">
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 1: CATALOGUE SEARCH (Root / Default)
+    ───────────────────────────────────────────── -->
+    <section id="section-catalogue" class="tab-section active">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 class="fw-bold mb-1"><i class="bi bi-book-half text-danger me-2"></i>Library Catalogue</h2>
+          <p class="text-muted mb-0">Browse, search, and reserve books from the centralized inventory</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="fetchBooks()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="card mb-4 p-3 shadow-sm bg-white">
+        <div class="input-group input-group-lg">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" id="searchInput" class="form-control border-start-0 ps-0"
+                 placeholder="Search by title, author, or ISBN…" oninput="handleSearch()">
+          <button class="btn btn-lis-primary px-4" onclick="handleSearch()">Search</button>
+        </div>
+      </div>
+
+      <!-- Books Table Card -->
+      <div class="card shadow-sm p-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-muted small" id="catalogueStats">Loading catalogue…</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Publisher</th>
+                <th>Rack</th>
+                <th>Total</th>
+                <th>Available</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="booksTableBody">
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading books from Supabase…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 2: ISSUE BOOK (Clerk only)
+    ───────────────────────────────────────────── -->
+    <section id="section-issue" class="tab-section">
+      <div class="row justify-content-center">
+        <div class="col-lg-6">
+          <div class="card shadow-sm p-4 bg-white">
+            <h3 class="fw-bold mb-3"><i class="bi bi-arrow-up-circle text-primary me-2"></i>Issue Book</h3>
+            <p class="text-muted small mb-4">Validate member category limits and active reservations before issue</p>
+
+            <form id="issueForm" onsubmit="handleIssue(event)">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Member Code <span class="text-danger">*</span></label>
+                <input type="text" id="issueMemberCode" class="form-control form-control-lg" placeholder="e.g. U001" required autocomplete="off">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Book ISBN <span class="text-danger">*</span></label>
+                <input type="text" id="issueIsbn" class="form-control form-control-lg" placeholder="e.g. 978-0-13-110362-7" required autocomplete="off">
+              </div>
+              <button type="submit" class="btn btn-lis-primary btn-lg w-100 mt-2" id="issueSubmitBtn">
+                <i class="bi bi-arrow-up-circle me-1"></i>Issue Book
+              </button>
+            </form>
+
+            <div class="mt-4 p-3 bg-light rounded border">
+              <span class="fw-bold small text-muted d-block mb-2">Category Loan Rules</span>
+              <div class="row text-center small">
+                <div class="col-3"><strong>UG</strong><br>2 books / 30d</div>
+                <div class="col-3"><strong>PG</strong><br>4 books / 30d</div>
+                <div class="col-3"><strong>RS</strong><br>6 books / 90d</div>
+                <div class="col-3"><strong>FA</strong><br>10 books / 180d</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 3: RETURN BOOK (Clerk only)
+    ───────────────────────────────────────────── -->
+    <section id="section-return" class="tab-section">
+      <div class="row justify-content-center">
+        <div class="col-lg-6">
+          <!-- Return Input Card -->
+          <div class="card shadow-sm p-4 bg-white" id="returnFormCard">
+            <h3 class="fw-bold mb-3"><i class="bi bi-arrow-down-circle text-success me-2"></i>Return Book</h3>
+            <p class="text-muted small mb-4">Calculate overdue fines (Rs. 2/day) and manage reservation holds (7 days)</p>
+
+            <form id="returnForm" onsubmit="handleReturn(event)">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Member Code <span class="text-danger">*</span></label>
+                <input type="text" id="returnMemberCode" class="form-control form-control-lg" placeholder="e.g. U002" required autocomplete="off">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Book ISBN <span class="text-danger">*</span></label>
+                <input type="text" id="returnIsbn" class="form-control form-control-lg" placeholder="e.g. 978-0-13-468599-1" required autocomplete="off">
+              </div>
+              <button type="submit" class="btn btn-lis-primary btn-lg w-100 mt-2" id="returnSubmitBtn">
+                <i class="bi bi-arrow-down-circle me-1"></i>Process Return
+              </button>
+            </form>
+          </div>
+
+          <!-- Printable Receipt / Slip Card (Shown after Return) -->
+          <div class="card shadow-sm p-4 bg-white d-none mt-3" id="receiptCard">
+            <div class="text-center mb-3">
+              <h4 class="fw-bold mb-1">Library Information System</h4>
+              <p class="text-muted small mb-0" id="receiptSubtitle">Return Receipt</p>
+              <hr>
+            </div>
+            <div id="receiptContent"></div>
+            <hr>
+            <div class="d-flex justify-content-between no-print mt-3">
+              <button class="btn btn-outline-secondary" onclick="resetReturnForm()">
+                <i class="bi bi-arrow-left me-1"></i>New Return
+              </button>
+              <button class="btn btn-lis-primary" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Print Slip / Bill
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 4: MANAGE BOOKS (Clerk only)
+    ───────────────────────────────────────────── -->
+    <section id="section-manage-books" class="tab-section">
+      <div class="row g-4">
+        <!-- Add Book -->
+        <div class="col-lg-6">
+          <div class="card shadow-sm p-4 bg-white h-100">
+            <h4 class="fw-bold mb-3"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Title</h4>
+            <form id="addBookForm" onsubmit="handleAddBook(event)">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">ISBN *</label>
+                  <input type="text" id="newIsbn" class="form-control" required placeholder="e.g. 978-1-23-456789-0">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Rack Number *</label>
+                  <input type="text" id="newRack" class="form-control" required placeholder="e.g. CS-F1">
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-semibold">Book Title *</label>
+                  <input type="text" id="newTitle" class="form-control" required placeholder="Title">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Author *</label>
+                  <input type="text" id="newAuthor" class="form-control" required placeholder="Author">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Publisher</label>
+                  <input type="text" id="newPublisher" class="form-control" placeholder="Optional">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold">Total Copies *</label>
+                  <input type="number" id="newCopies" class="form-control" min="1" value="1" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-lis-primary mt-4 w-100">
+                <i class="bi bi-save me-1"></i>Save Book
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Delete Book -->
+        <div class="col-lg-6">
+          <div class="card shadow-sm p-4 bg-white h-100">
+            <h4 class="fw-bold mb-3 text-danger"><i class="bi bi-trash me-2"></i>Delete Title</h4>
+            <p class="text-muted small">A book can only be deleted if <strong>no copies are currently on loan</strong>.</p>
+            <form id="deleteBookForm" onsubmit="handleDeleteBook(event)">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Book ISBN *</label>
+                <input type="text" id="deleteIsbn" class="form-control" required placeholder="Enter ISBN to delete">
+              </div>
+              <button type="submit" class="btn btn-outline-danger w-100 mt-2">
+                <i class="bi bi-trash me-1"></i>Delete Book
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 5: MEMBER MANAGEMENT (Librarian only)
+    ───────────────────────────────────────────── -->
+    <section id="section-members" class="tab-section">
+      <div class="row g-4">
+        <!-- Register Member -->
+        <div class="col-lg-4">
+          <div class="card shadow-sm p-4 bg-white">
+            <h4 class="fw-bold mb-3"><i class="bi bi-person-plus text-primary me-2"></i>Register Member</h4>
+            <form id="addMemberForm" onsubmit="handleAddMember(event)">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Member Code *</label>
+                <input type="text" id="newMemberCode" class="form-control" required placeholder="e.g. U010">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Full Name *</label>
+                <input type="text" id="newMemberName" class="form-control" required placeholder="Full Name">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Category *</label>
+                <select id="newMemberCategory" class="form-select" required>
+                  <option value="UG">UG (Undergraduate — 2 books, 30 days)</option>
+                  <option value="PG">PG (Postgraduate — 4 books, 30 days)</option>
+                  <option value="RS">RS (Research Scholar — 6 books, 90 days)</option>
+                  <option value="FA">FA (Faculty — 10 books, 180 days)</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-lis-primary w-100 mt-2">
+                <i class="bi bi-person-check me-1"></i>Register Member
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Members Table -->
+        <div class="col-lg-8">
+          <div class="card shadow-sm p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>All Members</h4>
+              <button class="btn btn-sm btn-outline-secondary" onclick="fetchMembers()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Joined</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="membersTableBody">
+                  <tr><td colspan="5" class="text-center text-muted py-3">Loading members…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 6: OVERDUE REMINDERS (Librarian only)
+    ───────────────────────────────────────────── -->
+    <section id="section-reminders" class="tab-section">
+      <div class="card shadow-sm p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-bell text-danger me-2"></i>Overdue Reminders</h3>
+            <p class="text-muted small mb-0">Loans past due date with calculated overdue penalties (Rs. 2/day)</p>
+          </div>
+          <button class="btn btn-lis-primary no-print" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print Report
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Member Code</th>
+                <th>Member Name</th>
+                <th>Category</th>
+                <th>Book Title</th>
+                <th>ISBN</th>
+                <th>Due Date</th>
+                <th>Days Late</th>
+                <th>Penalty</th>
+              </tr>
+            </thead>
+            <tbody id="remindersTableBody">
+              <tr><td colspan="9" class="text-center text-muted py-3">Loading overdue records…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 7: UNUSED BOOKS (Librarian only)
+    ───────────────────────────────────────────── -->
+    <section id="section-unused" class="tab-section">
+      <div class="card shadow-sm p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-archive text-warning me-2"></i>Unused Books Report</h3>
+            <p class="text-muted small mb-0">Books not issued even once in the last 5 years</p>
+          </div>
+          <button class="btn btn-lis-primary no-print" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print Report
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Publisher</th>
+                <th>Rack</th>
+                <th>Copies</th>
+                <th>Date Added</th>
+              </tr>
+            </thead>
+            <tbody id="unusedTableBody">
+              <tr><td colspan="8" class="text-center text-muted py-3">Loading unused report…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Login Modal -->
+  <div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title fw-bold"><i class="bi bi-box-arrow-in-right me-2"></i>Select Sign-In Role</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="mb-4">
+            <label class="form-label fw-bold text-muted small">STAFF ACCESS</label>
+            <div class="d-grid gap-2">
+              <button class="btn btn-lis-primary py-2" onclick="setRole('librarian')">
+                <i class="bi bi-person-badge me-2"></i>Sign in as Librarian
+              </button>
+              <button class="btn btn-outline-dark py-2" onclick="setRole('clerk')">
+                <i class="bi bi-person-workspace me-2"></i>Sign in as Clerk
+              </button>
+            </div>
+          </div>
+          <hr>
+          <div>
+            <label class="form-label fw-bold text-muted small">MEMBER ACCESS</label>
+            <div class="input-group mb-2">
+              <span class="input-group-text"><i class="bi bi-person"></i></span>
+              <input type="text" id="memberCodeInput" class="form-control" placeholder="Enter Member Code (e.g. U001)">
+              <button class="btn btn-outline-primary" onclick="loginAsMember()">Sign In</button>
+            </div>
+            <div class="form-text small">Try demo codes: <code>U001</code>, <code>U002</code>, <code>P001</code>, <code>F001</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Supabase & LIS Core Client Logic -->
+  <script>
+    // ─────────────────────────────────────────────
+    // 1. Supabase Client Initialization
+    // ─────────────────────────────────────────────
+    const SUPABASE_URL = "https://qzbzbsbhrsmprnthlkwq.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_4fbr-a8e_keeSY5h5gsOJA_BfGfDwWU";
+    
+    // Use sb to avoid colliding with window.supabase global identifier
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Business rule limits
+    const CATEGORY_LIMITS = {
+      UG: { books: 2, days: 30 },
+      PG: { books: 4, days: 30 },
+      RS: { books: 6, days: 90 },
+      FA: { books: 10, days: 180 }
+    };
+    const FINE_PER_DAY = 2;
+    const HOLD_DAYS = 7;
+
+    // Session State
+    let currentUser = null; // { role: 'guest'|'clerk'|'librarian'|'member', code: string, memberData: obj }
+    let allBooks = [];
+
+    // ─────────────────────────────────────────────
+    // 2. Alert & UI Navigation Helpers
+    // ─────────────────────────────────────────────
+    function showAlert(message, type = "success") {
+      const placeholder = document.getElementById("alertPlaceholder");
+      placeholder.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showSection(sectionId) {
+      document.querySelectorAll(".tab-section").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+
+      const target = document.getElementById("section-" + sectionId);
+      if (target) target.classList.add("active");
+
+      const navLink = document.getElementById("nav-" + sectionId);
+      if (navLink) navLink.classList.add("active");
+
+      if (sectionId === "catalogue") fetchBooks();
+      if (sectionId === "members") fetchMembers();
+      if (sectionId === "reminders") fetchReminders();
+      if (sectionId === "unused") fetchUnusedReport();
+    }
+
+    // ─────────────────────────────────────────────
+    // 3. Authentication & Role Switcher
+    // ─────────────────────────────────────────────
+    function updateAuthUI() {
+      const guestDiv = document.getElementById("authStatusGuest");
+      const userDiv = document.getElementById("authStatusUser");
+      const userName = document.getElementById("userName");
+      const userBadge = document.getElementById("userRoleBadge");
+      const userIcon = document.getElementById("userRoleIcon");
+
+      document.querySelectorAll(".clerk-only").forEach(el => el.classList.add("d-none"));
+      document.querySelectorAll(".librarian-only").forEach(el => el.classList.add("d-none"));
+
+      if (!currentUser || currentUser.role === "guest") {
+        guestDiv.classList.remove("d-none");
+        userDiv.classList.add("d-none");
+      } else {
+        guestDiv.classList.add("d-none");
+        userDiv.classList.remove("d-none");
+        userDiv.classList.add("d-flex");
+
+        if (currentUser.role === "librarian") {
+          userName.textContent = "Librarian";
+          userBadge.textContent = "Librarian";
+          userIcon.className = "bi bi-person-badge me-1";
+          document.querySelectorAll(".librarian-only").forEach(el => el.classList.remove("d-none"));
+        } else if (currentUser.role === "clerk") {
+          userName.textContent = "Desk Clerk";
+          userBadge.textContent = "Clerk";
+          userIcon.className = "bi bi-person-workspace me-1";
+          document.querySelectorAll(".clerk-only").forEach(el => el.classList.remove("d-none"));
+        } else if (currentUser.role === "member") {
+          userName.textContent = currentUser.memberData ? currentUser.memberData.name : currentUser.code;
+          userBadge.textContent = currentUser.memberData ? currentUser.memberData.category : "Member";
+          userIcon.className = "bi bi-person-circle me-1";
+        }
+      }
+      renderBooksTable(allBooks);
+    }
+
+    function setRole(role) {
+      currentUser = { role: role };
+      bootstrap.Modal.getInstance(document.getElementById("loginModal")).hide();
+      showAlert(`Signed in as <strong>${role.toUpperCase()}</strong>.`, "info");
+      updateAuthUI();
+      if (role === "clerk") showSection("issue");
+      else if (role === "librarian") showSection("members");
+      else showSection("catalogue");
+    }
+
+    async function loginAsMember() {
+      const codeInput = document.getElementById("memberCodeInput").value.trim().toUpperCase();
+      if (!codeInput) return;
+
+      const { data, error } = await sb
+        .from("member")
+        .select("*")
+        .eq("code", codeInput)
+        .maybeSingle();
+
+      if (error || !data) {
+        alert("Member code not found. Please check and try again.");
+        return;
+      }
+
+      currentUser = { role: "member", code: codeInput, memberData: data };
+      bootstrap.Modal.getInstance(document.getElementById("loginModal")).hide();
+      showAlert(`Welcome, <strong>${data.name}</strong> (${data.category})!`, "success");
+      updateAuthUI();
+      showSection("catalogue");
+    }
+
+    function logout() {
+      currentUser = null;
+      showAlert("You have signed out.", "secondary");
+      updateAuthUI();
+      showSection("catalogue");
+    }
+
+    // ─────────────────────────────────────────────
+    // 4. Data Operations: Books Catalogue
+    // ─────────────────────────────────────────────
+    async function fetchBooks() {
+      const { data, error } = await sb
+        .from("book")
+        .select("*")
+        .order("title");
+
+      if (error) {
+        showAlert("Failed to load books: " + error.message, "danger");
+        return;
+      }
+      allBooks = data || [];
+      renderBooksTable(allBooks);
+    }
+
+    function renderBooksTable(books) {
+      const tbody = document.getElementById("booksTableBody");
+      const stats = document.getElementById("catalogueStats");
+
+      stats.textContent = `Displaying ${books.length} book(s) in catalogue`;
+
+      if (!books.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No books found in the catalogue.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = books.map(b => {
+        let actionBtn = "";
+        if (currentUser && currentUser.role === "clerk") {
+          if (b.available_copies > 0) {
+            actionBtn = `<button class="btn btn-sm btn-lis-primary" onclick="prepareIssue('${b.isbn}')"><i class="bi bi-arrow-up-circle me-1"></i>Issue</button>`;
+          } else {
+            actionBtn = `<span class="text-muted small">None free</span>`;
+          }
+        } else if (currentUser && currentUser.role === "member") {
+          if (b.available_copies === 0) {
+            actionBtn = `<button class="btn btn-sm btn-outline-danger" onclick="reserveBook('${b.isbn}')"><i class="bi bi-bookmark-plus me-1"></i>Reserve</button>`;
+          } else {
+            actionBtn = `<span class="text-success small fw-semibold"><i class="bi bi-check-circle me-1"></i>Available</span>`;
+          }
+        } else {
+          actionBtn = b.available_copies > 0 
+            ? `<span class="text-success small fw-semibold"><i class="bi bi-check-circle me-1"></i>Available</span>`
+            : `<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#loginModal">Sign in to reserve</button>`;
+        }
+
+        const stockBadge = b.available_copies > 0
+          ? `<span class="badge bg-success">${b.available_copies} available</span>`
+          : `<span class="badge bg-danger">0 available</span>`;
+
+        return `
+          <tr>
+            <td><code>${b.isbn}</code></td>
+            <td class="fw-semibold">${b.title}</td>
+            <td>${b.author}</td>
+            <td>${b.publisher || "—"}</td>
+            <td><span class="badge bg-light text-dark border">${b.rack_no}</span></td>
+            <td>${b.total_copies}</td>
+            <td>${stockBadge}</td>
+            <td>${actionBtn}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function handleSearch() {
+      const query = document.getElementById("searchInput").value.trim().toLowerCase();
+      if (!query) {
+        renderBooksTable(allBooks);
+        return;
+      }
+      const filtered = allBooks.filter(b => 
+        (b.title && b.title.toLowerCase().includes(query)) ||
+        (b.author && b.author.toLowerCase().includes(query)) ||
+        (b.isbn && b.isbn.toLowerCase().includes(query))
+      );
+      renderBooksTable(filtered);
+    }
+
+    // ─────────────────────────────────────────────
+    // 5. Circulation: Issue Book
+    // ─────────────────────────────────────────────
+    function prepareIssue(isbn) {
+      document.getElementById("issueIsbn").value = isbn;
+      showSection("issue");
+    }
+
+    async function handleIssue(e) {
+      e.preventDefault();
+      const memberCode = document.getElementById("issueMemberCode").value.trim().toUpperCase();
+      const isbn = document.getElementById("issueIsbn").value.trim();
+
+      // 1. Get Member
+      const { data: member, error: mErr } = await sb
+        .from("member")
+        .select("*")
+        .eq("code", memberCode)
+        .maybeSingle();
+
+      if (mErr || !member) {
+        showAlert("Member not found with code: " + memberCode, "danger");
+        return;
+      }
+
+      // 2. Get Book
+      const { data: book, error: bErr } = await sb
+        .from("book")
+        .select("*")
+        .eq("isbn", isbn)
+        .maybeSingle();
+
+      if (bErr || !book) {
+        showAlert("Book not found with ISBN: " + isbn, "danger");
+        return;
+      }
+
+      // 3. Check Category Limits
+      const { count: openLoans } = await sb
+        .from("issue")
+        .select("*", { count: "exact", head: true })
+        .eq("member_code", memberCode)
+        .is("return_date", null);
+
+      const limit = CATEGORY_LIMITS[member.category].books;
+      if (openLoans >= limit) {
+        showAlert(`Issue limit reached for ${member.name} (${limit} books maximum for ${member.category}).`, "danger");
+        return;
+      }
+
+      // 4. Check Reservation Hold
+      const { data: holdRes } = await sb
+        .from("reservation")
+        .select("*")
+        .eq("book_isbn", isbn)
+        .eq("status", "Hold")
+        .maybeSingle();
+
+      if (holdRes && holdRes.member_code !== memberCode) {
+        showAlert("Cannot issue: Book is reserved and currently held for another member.", "danger");
+        return;
+      }
+
+      // 5. Check Availability
+      if (book.available_copies < 1) {
+        showAlert("No free copies available in stock.", "danger");
+        return;
+      }
+
+      // 6. Calculate Due Date & Commit Issue
+      const today = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(today.getDate() + CATEGORY_LIMITS[member.category].days);
+
+      const todayStr = today.toISOString().split("T")[0];
+      const dueStr = dueDate.toISOString().split("T")[0];
+
+      // Insert Issue
+      const { error: issueErr } = await sb
+        .from("issue")
+        .insert([{
+          book_isbn: isbn,
+          member_code: memberCode,
+          issue_date: todayStr,
+          due_date: dueStr,
+          penalty_paid: 0.0
+        }]);
+
+      if (issueErr) {
+        showAlert("Error recording issue: " + issueErr.message, "danger");
+        return;
+      }
+
+      // Decrement Available Copies
+      await sb
+        .from("book")
+        .update({ available_copies: book.available_copies - 1 })
+        .eq("isbn", isbn);
+
+      // Fulfill Hold if held by this member
+      if (holdRes && holdRes.member_code === memberCode) {
+        await sb
+          .from("reservation")
+          .update({ status: "Fulfilled" })
+          .eq("id", holdRes.id);
+      }
+
+      showAlert(`Book "<strong>${book.title}</strong>" issued to <strong>${member.name}</strong>. Due date: <strong>${dueStr}</strong>.`, "success");
+      document.getElementById("issueForm").reset();
+      fetchBooks();
+    }
+
+    // ─────────────────────────────────────────────
+    // 6. Circulation: Return Book
+    // ─────────────────────────────────────────────
+    async function handleReturn(e) {
+      e.preventDefault();
+      const memberCode = document.getElementById("returnMemberCode").value.trim().toUpperCase();
+      const isbn = document.getElementById("returnIsbn").value.trim();
+
+      // Find open issue with relational joins
+      const { data: openIssue, error: iErr } = await sb
+        .from("issue")
+        .select("*, book(*), member(*)")
+        .eq("member_code", memberCode)
+        .eq("book_isbn", isbn)
+        .is("return_date", null)
+        .maybeSingle();
+
+      if (iErr || !openIssue) {
+        showAlert("No open issue found for member " + memberCode + " and ISBN " + isbn, "danger");
+        return;
+      }
+
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+      const dueDate = new Date(openIssue.due_date);
+
+      // Calculate Overdue Penalty (Rs. 2/day)
+      const diffTime = today - dueDate;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const overdueDays = diffDays > 0 ? diffDays : 0;
+      const penalty = overdueDays * FINE_PER_DAY;
+
+      // Close Issue
+      await sb
+        .from("issue")
+        .update({ return_date: todayStr, penalty_paid: penalty })
+        .eq("id", openIssue.id);
+
+      // Check FIFO Waiting Reservation
+      const { data: waitingRes } = await sb
+        .from("reservation")
+        .select("*, member(*)")
+        .eq("book_isbn", isbn)
+        .eq("status", "Waiting")
+        .order("reservation_date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      const receiptCard = document.getElementById("receiptCard");
+      const returnFormCard = document.getElementById("returnFormCard");
+      const content = document.getElementById("receiptContent");
+      const subtitle = document.getElementById("receiptSubtitle");
+
+      if (waitingRes) {
+        // Place on 7-day hold
+        const holdDate = new Date();
+        holdDate.setDate(today.getDate() + HOLD_DAYS);
+        const holdStr = holdDate.toISOString().split("T")[0];
+
+        await sb
+          .from("reservation")
+          .update({ status: "Hold", hold_until: holdStr })
+          .eq("id", waitingRes.id);
+
+        subtitle.textContent = "Reservation Hold Slip";
+        content.innerHTML = `
+          <div class="alert alert-warning py-2 mb-3">
+            <i class="bi bi-bookmark-check me-2"></i><strong>Reserved copy returned.</strong> Placed on 7-day hold for member.
+          </div>
+          <table class="table table-borderless table-sm mb-0">
+            <tr><th>Reserved For:</th><td><strong>${waitingRes.member ? waitingRes.member.name : waitingRes.member_code}</strong></td></tr>
+            <tr><th>Member Code:</th><td><code>${waitingRes.member_code}</code></td></tr>
+            <tr><th>Book Title:</th><td>${openIssue.book ? openIssue.book.title : isbn}</td></tr>
+            <tr><th>Hold Deadline:</th><td><strong class="text-danger">${holdStr}</strong> (7 days)</td></tr>
+            ${penalty > 0 ? `<tr><th>Penalty Collected:</th><td><strong class="text-danger">Rs. ${penalty}</strong> (${overdueDays} days late)</td></tr>` : ""}
+          </table>
+        `;
+      } else {
+        // Return copy to available stock
+        const { data: bData } = await sb.from("book").select("available_copies").eq("isbn", isbn).single();
+        if (bData) {
+          await sb.from("book").update({ available_copies: bData.available_copies + 1 }).eq("isbn", isbn);
+        }
+
+        subtitle.textContent = "Return Receipt";
+        content.innerHTML = `
+          <table class="table table-borderless table-sm mb-0">
+            <tr><th>Member:</th><td>${openIssue.member ? openIssue.member.name : memberCode} (<code>${memberCode}</code>)</td></tr>
+            <tr><th>Book:</th><td>${openIssue.book ? openIssue.book.title : isbn}</td></tr>
+            <tr><th>Due Date:</th><td>${openIssue.due_date}</td></tr>
+            <tr><th>Returned:</th><td>${todayStr}</td></tr>
+            <tr><th>Overdue Penalty:</th><td>
+              ${penalty > 0 ? `<span class="badge bg-danger fs-6">Rs. ${penalty}</span> (${overdueDays} days @ Rs. 2/day)` : `<span class="badge bg-success fs-6">None — Returned on time</span>`}
+            </td></tr>
+          </table>
+        `;
+      }
+
+      returnFormCard.classList.add("d-none");
+      receiptCard.classList.remove("d-none");
+      showAlert("Book return processed successfully.", "success");
+      fetchBooks();
+    }
+
+    function resetReturnForm() {
+      document.getElementById("returnForm").reset();
+      document.getElementById("returnFormCard").classList.remove("d-none");
+      document.getElementById("receiptCard").classList.add("d-none");
+    }
+
+    // ─────────────────────────────────────────────
+    // 7. Member Reservation
+    // ─────────────────────────────────────────────
+    async function reserveBook(isbn) {
+      if (!currentUser || currentUser.role !== "member") {
+        showAlert("Please sign in with your member code to place a reservation.", "warning");
+        return;
+      }
+
+      // Check existing active reservation
+      const { data: existing } = await sb
+        .from("reservation")
+        .select("*")
+        .eq("book_isbn", isbn)
+        .eq("member_code", currentUser.code)
+        .in("status", ["Waiting", "Hold"])
+        .maybeSingle();
+
+      if (existing) {
+        showAlert("You already have an active reservation for this title.", "warning");
+        return;
+      }
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { error } = await sb
+        .from("reservation")
+        .insert([{
+          book_isbn: isbn,
+          member_code: currentUser.code,
+          reservation_date: todayStr,
+          status: "Waiting"
+        }]);
+
+      if (error) {
+        showAlert("Error creating reservation: " + error.message, "danger");
+      } else {
+        showAlert("Reservation placed! You will be placed in the priority hold queue once a copy is returned.", "success");
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // 8. Book Management (Clerk)
+    // ─────────────────────────────────────────────
+    async function handleAddBook(e) {
+      e.preventDefault();
+      const isbn = document.getElementById("newIsbn").value.trim();
+      const title = document.getElementById("newTitle").value.trim();
+      const author = document.getElementById("newAuthor").value.trim();
+      const publisher = document.getElementById("newPublisher").value.trim();
+      const rack = document.getElementById("newRack").value.trim();
+      const copies = parseInt(document.getElementById("newCopies").value);
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { error } = await sb
+        .from("book")
+        .insert([{
+          isbn: isbn,
+          title: title,
+          author: author,
+          publisher: publisher || null,
+          rack_no: rack,
+          total_copies: copies,
+          available_copies: copies,
+          date_added: todayStr
+        }]);
+
+      if (error) {
+        showAlert("Failed to add book (ISBN might already exist): " + error.message, "danger");
+      } else {
+        showAlert(`Book "${title}" added successfully!`, "success");
+        document.getElementById("addBookForm").reset();
+        fetchBooks();
+      }
+    }
+
+    async function handleDeleteBook(e) {
+      e.preventDefault();
+      const isbn = document.getElementById("deleteIsbn").value.trim();
+
+      const { data: book, error: bErr } = await sb
+        .from("book")
+        .select("*")
+        .eq("isbn", isbn)
+        .maybeSingle();
+
+      if (bErr || !book) {
+        showAlert("Book with ISBN " + isbn + " not found.", "danger");
+        return;
+      }
+
+      if (book.available_copies !== book.total_copies) {
+        showAlert(`Cannot delete: ${book.total_copies - book.available_copies} copy/copies are currently checked out on loan.`, "danger");
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to delete "${book.title}"?`)) return;
+
+      const { error: delErr } = await sb
+        .from("book")
+        .delete()
+        .eq("isbn", isbn);
+
+      if (delErr) {
+        showAlert("Error deleting book: " + delErr.message, "danger");
+      } else {
+        showAlert(`Book "${book.title}" has been deleted.`, "success");
+        document.getElementById("deleteBookForm").reset();
+        fetchBooks();
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // 9. Member Management (Librarian)
+    // ─────────────────────────────────────────────
+    async function fetchMembers() {
+      const { data, error } = await sb
+        .from("member")
+        .select("*")
+        .order("code");
+
+      const tbody = document.getElementById("membersTableBody");
+      if (error || !data) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Failed to load members: ${error ? error.message : ""}</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(m => `
+        <tr>
+          <td><code>${m.code}</code></td>
+          <td class="fw-semibold">${m.name}</td>
+          <td><span class="badge bg-secondary">${m.category}</span></td>
+          <td>${m.join_date}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger" onclick="removeMember('${m.code}', '${m.name}')">
+              <i class="bi bi-person-dash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    async function handleAddMember(e) {
+      e.preventDefault();
+      const code = document.getElementById("newMemberCode").value.trim().toUpperCase();
+      const name = document.getElementById("newMemberName").value.trim();
+      const category = document.getElementById("newMemberCategory").value;
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { error } = await sb
+        .from("member")
+        .insert([{ code, name, category, join_date: todayStr }]);
+
+      if (error) {
+        showAlert("Failed to register member: " + error.message, "danger");
+      } else {
+        showAlert(`Member ${name} (${code}) registered!`, "success");
+        document.getElementById("addMemberForm").reset();
+        fetchMembers();
+      }
+    }
+
+    async function removeMember(code, name) {
+      const { count: openLoans } = await sb
+        .from("issue")
+        .select("*", { count: "exact", head: true })
+        .eq("member_code", code)
+        .is("return_date", null);
+
+      if (openLoans && openLoans > 0) {
+        showAlert(`Cannot remove member ${name}: They still have ${openLoans} unreturned book(s).`, "danger");
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to remove member ${name} (${code})?`)) return;
+
+      const { error } = await sb.from("member").delete().eq("code", code);
+      if (error) {
+        showAlert("Error removing member: " + error.message, "danger");
+      } else {
+        showAlert(`Member ${name} removed.`, "success");
+        fetchMembers();
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // 10. Reports: Reminders & Unused (Librarian)
+    // ─────────────────────────────────────────────
+    async function fetchReminders() {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { data, error } = await sb
+        .from("issue")
+        .select("*, book(*), member(*)")
+        .is("return_date", null)
+        .lt("due_date", todayStr)
+        .order("due_date");
+
+      const tbody = document.getElementById("remindersTableBody");
+      if (error || !data) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-danger">Failed to load overdue report: ${error ? error.message : ""}</td></tr>`;
+        return;
+      }
+      if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-success py-3"><i class="bi bi-check-circle me-1"></i>No overdue loans currently.</td></tr>`;
+        return;
+      }
+
+      const today = new Date();
+      tbody.innerHTML = data.map((iss, idx) => {
+        const dueDate = new Date(iss.due_date);
+        const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
+        const penalty = daysOverdue * FINE_PER_DAY;
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><code>${iss.member_code}</code></td>
+            <td>${iss.member ? iss.member.name : "—"}</td>
+            <td><span class="badge bg-secondary">${iss.member ? iss.member.category : "—"}</span></td>
+            <td class="fw-semibold">${iss.book ? iss.book.title : "—"}</td>
+            <td><code>${iss.book_isbn}</code></td>
+            <td class="text-danger fw-semibold">${iss.due_date}</td>
+            <td class="text-danger fw-bold">${daysOverdue} day(s)</td>
+            <td class="fw-bold">Rs. ${penalty}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function fetchUnusedReport() {
+      const fiveYearsAgo = new Date();
+      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+      const cutoffStr = fiveYearsAgo.toISOString().split("T")[0];
+
+      // Books issued in last 5 years
+      const { data: recentIssues } = await sb
+        .from("issue")
+        .select("book_isbn")
+        .gte("issue_date", cutoffStr);
+
+      const activeIsbns = new Set((recentIssues || []).map(i => i.book_isbn));
+      const unusedBooks = allBooks.filter(b => !activeIsbns.has(b.isbn));
+
+      const tbody = document.getElementById("unusedTableBody");
+      if (!unusedBooks.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-success py-3">All books have been issued at least once in the past 5 years.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = unusedBooks.map((b, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><code>${b.isbn}</code></td>
+          <td class="fw-semibold">${b.title}</td>
+          <td>${b.author}</td>
+          <td>${b.publisher || "—"}</td>
+          <td>${b.rack_no}</td>
+          <td>${b.total_copies}</td>
+          <td>${b.date_added || "—"}</td>
+        </tr>
+      `).join("");
+    }
+
+    // ─────────────────────────────────────────────
+    // 11. Automatic Hold Expiry Check
+    // ─────────────────────────────────────────────
+    async function checkExpiredHolds() {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { data: expiredHolds } = await sb
+        .from("reservation")
+        .select("*")
+        .eq("status", "Hold")
+        .lt("hold_until", todayStr);
+
+      if (expiredHolds && expiredHolds.length) {
+        for (const res of expiredHolds) {
+          await sb.from("reservation").update({ status: "Expired" }).eq("id", res.id);
+          // Check next waiting
+          const { data: nextWaiting } = await sb
+            .from("reservation")
+            .select("*")
+            .eq("book_isbn", res.book_isbn)
+            .eq("status", "Waiting")
+            .order("reservation_date", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          if (nextWaiting) {
+            const newHold = new Date();
+            newHold.setDate(new Date().getDate() + HOLD_DAYS);
+            await sb.from("reservation").update({
+              status: "Hold",
+              hold_until: newHold.toISOString().split("T")[0]
+            }).eq("id", nextWaiting.id);
+          } else {
+            const { data: bk } = await sb.from("book").select("available_copies").eq("isbn", res.book_isbn).single();
+            if (bk) {
+              await sb.from("book").update({ available_copies: bk.available_copies + 1 }).eq("isbn", res.book_isbn);
+            }
+          }
+        }
+      }
+    }
+
+    // Auto-initialize on load
+    document.addEventListener("DOMContentLoaded", async () => {
+      await checkExpiredHolds();
+      await fetchBooks();
+      updateAuthUI();
+    });
+  </script>
+</body>
+</html>
+
