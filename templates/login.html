@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5">
+    <div class="card shadow-sm p-4">
+      <h2 class="mb-4 text-center fw-bold">
+        <i class="bi bi-book-half me-2" style="color:#c0392b;"></i>Library Information System
+      </h2>
+      <p class="text-center text-muted mb-4">Sign in by selecting your role or entering your member code.</p>
+
+      <form method="POST" action="{{ url_for('login') }}">
+
+        <!-- Staff roles -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Staff Role</label>
+          <div class="d-grid gap-2">
+            <button type="submit" name="role" value="librarian" class="btn btn-lis-primary btn-lg">
+              <i class="bi bi-person-badge me-2"></i>Sign in as Librarian
+            </button>
+            <button type="submit" name="role" value="clerk" class="btn btn-outline-dark btn-lg">
+              <i class="bi bi-person-workspace me-2"></i>Sign in as Clerk
+            </button>
+          </div>
+        </div>
+
+        <div class="text-center my-3 text-muted">— or —</div>
+
+        <!-- Member code -->
+        <div class="mb-3">
+          <label for="memberCode" class="form-label fw-semibold">Member Code</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person-circle"></i></span>
+            <input type="text" class="form-control form-control-lg" id="memberCode"
+                   name="role" placeholder="e.g. U001" autocomplete="off">
+          </div>
+          <div class="form-text">Enter your member code to sign in as a member.</div>
+        </div>
+
+        <div class="d-grid mt-3">
+          <button type="submit" class="btn btn-outline-secondary btn-lg">
+            <i class="bi bi-arrow-right-circle me-2"></i>Sign in as Member
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

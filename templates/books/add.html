@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Add Book{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card shadow-sm p-4">
+      <h3 class="fw-bold mb-4"><i class="bi bi-plus-circle me-2"></i>Add New Book</h3>
+      <form method="POST" action="{{ url_for('books_add') }}">
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">ISBN <span class="text-danger">*</span></label>
+            <input type="text" name="isbn" class="form-control" placeholder="e.g. 978-0-13-110362-7" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Rack Number <span class="text-danger">*</span></label>
+            <input type="text" name="rack_no" class="form-control" placeholder="e.g. A-12" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+            <input type="text" name="title" class="form-control" placeholder="Book title" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Author <span class="text-danger">*</span></label>
+            <input type="text" name="author" class="form-control" placeholder="Author name" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Publisher</label>
+            <input type="text" name="publisher" class="form-control" placeholder="Optional">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Number of Copies <span class="text-danger">*</span></label>
+            <input type="number" name="copies" class="form-control" min="1" value="1" required>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-lis-primary">
+            <i class="bi bi-floppy me-1"></i>Add Book
+          </button>
+          <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

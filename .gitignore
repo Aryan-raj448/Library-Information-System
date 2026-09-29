@@ -1,0 +1,50 @@
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ── Virtual environments ─────────────────────────────────
+.myenv/
+venv/
+env/
+.env/
+.venv/
+
+# ── Environment / secrets ────────────────────────────────
+.env
+*.env
+
+# ── SQLite database ──────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Flask / app runtime ──────────────────────────────────
+instance/
+.flask_session/
+
+# ── OS ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor ───────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Distribution / packaging ─────────────────────────────
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# ── Testing ──────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml

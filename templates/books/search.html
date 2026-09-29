@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Search Catalogue{% endblock %}
+
+{% block content %}
+<h3 class="mb-4 fw-bold"><i class="bi bi-search me-2"></i>Search Catalogue</h3>
+
+<form method="GET" action="{{ url_for('search') }}" class="mb-4">
+  <div class="input-group input-group-lg shadow-sm">
+    <input type="text" class="form-control" name="q"
+           placeholder="Search by ISBN, title, or author…"
+           value="{{ q }}" autofocus>
+    <button class="btn btn-lis-primary" type="submit">Search</button>
+  </div>
+</form>
+
+{% if q %}
+  {% if books %}
+  <p class="text-muted">{{ books|length }} result(s) for "<strong>{{ q }}</strong>"</p>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle bg-white rounded shadow-sm">
+      <thead class="table-dark">
+        <tr>
+          <th>ISBN</th>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Publisher</th>
+          <th>Rack</th>
+          <th>Copies</th>
+          <th>Available</th>
+          {% if session_role in ('clerk',) %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in books %}
+        <tr>
+          <td><code>{{ b.isbn }}</code></td>
+          <td>{{ b.title }}</td>
+          <td>{{ b.author }}</td>
+          <td>{{ b.publisher or '—' }}</td>
+          <td>{{ b.rack_no }}</td>
+          <td>{{ b.total_copies }}</td>
+          <td>
+            {% if b.available_copies > 0 %}
+              <span class="badge bg-success">{{ b.available_copies }}</span>
+            {% else %}
+              <span class="badge bg-danger">0</span>
+            {% endif %}
+          </td>
+          {% if session_role == 'clerk' %}
+          <td>
+            <a href="{{ url_for('issue') }}" class="btn btn-sm btn-lis-primary">Issue</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">No books found for "<strong>{{ q }}</strong>".</div>
+  {% endif %}
+{% else %}
+  <div class="text-center text-muted mt-5">
+    <i class="bi bi-journal-bookmark display-3"></i>
+    <p class="mt-3">Enter a search term above to find books.</p>
+  </div>
+{% endif %}
+{% endblock %}
+

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Overdue Reminders{% endblock %}
+
+{% block extra_head %}
+<style>
+  @media print {
+    .page-title { font-size: 18pt; }
+    table { font-size: 10pt; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+  <h3 class="fw-bold mb-0"><i class="bi bi-bell me-2"></i>Overdue Reminders</h3>
+  <button onclick="window.print()" class="btn btn-lis-primary">
+    <i class="bi bi-printer me-1"></i>Print Reminders
+  </button>
+</div>
+
+<!-- Print header (hidden on screen) -->
+<div class="print-only text-center mb-4">
+  <h4 class="page-title fw-bold">Library Information System — Overdue Reminders</h4>
+  <p>As of {{ today.strftime('%d %B %Y') }}</p>
+  <hr>
+</div>
+
+{% if overdue %}
+<p class="text-muted no-print">{{ overdue|length }} overdue loan(s) as of {{ today.strftime('%d %b %Y') }}.</p>
+
+<div class="table-responsive">
+  <table class="table table-bordered align-middle bg-white">
+    <thead class="table-dark">
+      <tr>
+        <th>#</th>
+        <th>Member Code</th>
+        <th>Member Name</th>
+        <th>Category</th>
+        <th>Book ISBN</th>
+        <th>Book Title</th>
+        <th>Due Date</th>
+        <th>Days Overdue</th>
+        <th>Fine (Rs. 2/day)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for iss in overdue %}
+      {% set overdue_days = (today - iss.due_date).days %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><code>{{ iss.member_code }}</code></td>
+        <td>{{ iss.member.name }}</td>
+        <td><span class="badge bg-secondary">{{ iss.member.category }}</span></td>
+        <td><code>{{ iss.book_isbn }}</code></td>
+        <td>{{ iss.book.title }}</td>
+        <td class="text-danger fw-semibold">{{ iss.due_date.strftime('%d %b %Y') }}</td>
+        <td class="text-danger fw-bold">{{ overdue_days }}</td>
+        <td class="fw-bold">Rs. {{ overdue_days * 2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-success">
+  <i class="bi bi-check-circle me-2"></i>No overdue loans as of {{ today.strftime('%d %b %Y') }}.
+</div>
+{% endif %}
+{% endblock %}
+

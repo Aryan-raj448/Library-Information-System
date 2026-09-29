@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Reservation Slip{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm p-4" id="slip">
+
+      <div class="text-center mb-3">
+        <h4 class="fw-bold">Library Information System</h4>
+        <p class="text-muted mb-0">Reservation Hold Slip</p>
+        <hr>
+      </div>
+
+      <div class="alert alert-warning no-print">
+        <i class="bi bi-bookmark-check me-2"></i>
+        <strong>Book returned.</strong> A reservation hold has been placed. Please hand this slip to the waiting member.
+      </div>
+
+      <table class="table table-borderless mb-0">
+        <tr><th>Reserved For</th><td><strong>{{ reserved_member.name }}</strong></td></tr>
+        <tr><th>Member Code</th><td>{{ reserved_member.code }}</td></tr>
+        <tr><th>Category</th><td>{{ reserved_member.category }}</td></tr>
+        <tr><th colspan="2"><hr class="my-1"></th></tr>
+        <tr><th>Book Title</th><td>{{ book.title }}</td></tr>
+        <tr><th>Author</th><td>{{ book.author }}</td></tr>
+        <tr><th>ISBN</th><td>{{ book.isbn }}</td></tr>
+        <tr><th>Rack</th><td>{{ book.rack_no }}</td></tr>
+        <tr><th colspan="2"><hr class="my-1"></th></tr>
+        <tr>
+          <th>Hold Expires</th>
+          <td><strong class="text-danger">{{ hold_until.strftime('%d %b %Y') }}</strong> (7 days)</td>
+        </tr>
+        {% if penalty > 0 %}
+        <tr>
+          <th>Penalty Collected</th>
+          <td><strong>Rs. {{ "%.0f"|format(penalty) }}</strong> from returning member</td>
+        </tr>
+        {% endif %}
+      </table>
+
+      <hr>
+      <p class="text-muted small text-center">
+        The book will be held until <strong>{{ hold_until.strftime('%d %b %Y') }}</strong>.
+        If not collected by then, the hold will expire automatically.
+      </p>
+
+      <div class="d-flex gap-2 no-print justify-content-end">
+        <button onclick="window.print()" class="btn btn-lis-primary">
+          <i class="bi bi-printer me-1"></i>Print Slip
+        </button>
+        <a href="{{ url_for('book_return') }}" class="btn btn-outline-secondary">New Return</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
