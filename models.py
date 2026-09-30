@@ -60,7 +60,7 @@ class Reservation(db.Model):
     book_isbn        = db.Column(db.String,  db.ForeignKey("book.isbn"),   nullable=False)
     member_code      = db.Column(db.String,  db.ForeignKey("member.code"), nullable=False)
     reservation_date = db.Column(db.Date,    nullable=False)
-    status           = db.Column(db.String,  nullable=False)  # Waiting | Hold | Fulfilled | Expired
+    status           = db.Column(db.String,  nullable=False)  # Waiting | Hold | Fulfilled | Expired | Cancelled
     hold_until       = db.Column(db.Date)    # NULL unless status == 'Hold'
 
     def __repr__(self):

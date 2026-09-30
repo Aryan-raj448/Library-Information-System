@@ -102,6 +102,11 @@
             </a>
           </li>
           <li class="nav-item clerk-only d-none">
+            <a class="nav-link" id="nav-clerk-reservations" href="#" onclick="showSection('reservations'); return false;">
+              <i class="bi bi-bookmark-check me-1"></i>Reservations
+            </a>
+          </li>
+          <li class="nav-item clerk-only d-none">
             <a class="nav-link" id="nav-manage-books" href="#" onclick="showSection('manage-books'); return false;">
               <i class="bi bi-journal-plus me-1"></i>Manage Books
             </a>
@@ -113,6 +118,11 @@
             </a>
           </li>
           <li class="nav-item librarian-only d-none">
+            <a class="nav-link" id="nav-librarian-reservations" href="#" onclick="showSection('reservations'); return false;">
+              <i class="bi bi-bookmark-check me-1"></i>Reservations
+            </a>
+          </li>
+          <li class="nav-item librarian-only d-none">
             <a class="nav-link" id="nav-reminders" href="#" onclick="showSection('reminders'); return false;">
               <i class="bi bi-bell me-1"></i>Reminders
             </a>
@@ -120,6 +130,12 @@
           <li class="nav-item librarian-only d-none">
             <a class="nav-link" id="nav-unused" href="#" onclick="showSection('unused'); return false;">
               <i class="bi bi-archive me-1"></i>Unused Books
+            </a>
+          </li>
+          <!-- Member Links -->
+          <li class="nav-item member-only d-none">
+            <a class="nav-link" id="nav-my-reservations" href="#" onclick="showSection('my-reservations'); return false;">
+              <i class="bi bi-bookmark-plus me-1"></i>My Reservations
             </a>
           </li>
         </ul>
@@ -494,7 +510,92 @@
       </div>
     </section>
 
+    <!-- ─────────────────────────────────────────────
+         SECTION 8: ACTIVE RESERVATIONS QUEUE (Clerk: Read-Only, Librarian: Admin)
+    ───────────────────────────────────────────── -->
+    <section id="section-reservations" class="tab-section">
+      <div class="card shadow-sm p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-bookmark-check text-warning me-2"></i>Active Reservations Queue</h3>
+            <p class="text-muted small mb-0">Overview of all books currently placed on hold or in the waiting queue</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="fetchReservations()"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+            <button class="btn btn-lis-primary btn-sm no-print" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+          </div>
+        </div>
+
+        <div id="clerkReservationsNotice" class="alert alert-info py-2 d-flex align-items-center mb-4 no-print d-none">
+          <i class="bi bi-info-circle fs-5 me-2"></i>
+          <span><strong>Read-Only Access:</strong> Clerks can monitor reserved titles and holding members here. Reservations cannot be modified or cancelled by desk staff.</span>
+        </div>
+        <div id="librarianReservationsNotice" class="alert alert-secondary py-2 d-flex align-items-center mb-4 no-print d-none">
+          <i class="bi bi-shield-lock fs-5 me-2"></i>
+          <span><strong>Administrative Access:</strong> You may cancel reservations on behalf of members or for policy reasons.</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Book Title</th>
+                <th>ISBN</th>
+                <th>Member</th>
+                <th>Code</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Requested Date</th>
+                <th>Hold Deadline</th>
+                <th class="text-end" id="reservationsActionHeader">Action</th>
+              </tr>
+            </thead>
+            <tbody id="reservationsTableBody">
+              <tr><td colspan="10" class="text-center text-muted py-3">Loading reservations…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────
+         SECTION 9: MY RESERVATIONS (Member only)
+    ───────────────────────────────────────────── -->
+    <section id="section-my-reservations" class="tab-section">
+      <div class="card shadow-sm p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-bookmark-plus text-primary me-2"></i>My Active Reservations</h3>
+            <p class="text-muted small mb-0">Track your reserved titles, current queue position, and hold deadlines</p>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm" onclick="fetchMyReservations()"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Book Title</th>
+                <th>ISBN</th>
+                <th>Rack</th>
+                <th>Status</th>
+                <th>Requested Date</th>
+                <th>Hold Deadline</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody id="myReservationsTableBody">
+              <tr><td colspan="8" class="text-center text-muted py-3">Loading your reservations…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
+
 
   <!-- Login Modal -->
   <div class="modal fade" id="loginModal" tabindex="-1">
@@ -521,7 +622,7 @@
             <label class="form-label fw-bold text-muted small">MEMBER ACCESS</label>
             <div class="input-group mb-2">
               <span class="input-group-text"><i class="bi bi-person"></i></span>
-              <input type="text" id="memberCodeInput" class="form-control" placeholder="Enter Member Code (e.g. U001)">
+              <input type="text" id="memberCodeInput" class="form-control" placeholder="Enter Member Code (e.g. U001)" onkeydown="if(event.key==='Enter') loginAsMember()">
               <button class="btn btn-outline-primary" onclick="loginAsMember()">Sign In</button>
             </div>
             <div class="form-text small">Try demo codes: <code>U001</code>, <code>U002</code>, <code>P001</code>, <code>F001</code></div>
@@ -558,6 +659,7 @@
     // Session State
     let currentUser = null; // { role: 'guest'|'clerk'|'librarian'|'member', code: string, memberData: obj }
     let allBooks = [];
+    let userActiveReservations = {}; // isbn -> reservation object (for logged-in member)
 
     // ─────────────────────────────────────────────
     // 2. Alert & UI Navigation Helpers
@@ -583,6 +685,14 @@
       const navLink = document.getElementById("nav-" + sectionId);
       if (navLink) navLink.classList.add("active");
 
+      if (sectionId === "reservations") {
+        const clerkNav = document.getElementById("nav-clerk-reservations");
+        const libNav = document.getElementById("nav-librarian-reservations");
+        if (currentUser && currentUser.role === "clerk" && clerkNav) clerkNav.classList.add("active");
+        if (currentUser && currentUser.role === "librarian" && libNav) libNav.classList.add("active");
+        fetchReservations();
+      }
+      if (sectionId === "my-reservations") fetchMyReservations();
       if (sectionId === "catalogue") fetchBooks();
       if (sectionId === "members") fetchMembers();
       if (sectionId === "reminders") fetchReminders();
@@ -601,10 +711,12 @@
 
       document.querySelectorAll(".clerk-only").forEach(el => el.classList.add("d-none"));
       document.querySelectorAll(".librarian-only").forEach(el => el.classList.add("d-none"));
+      document.querySelectorAll(".member-only").forEach(el => el.classList.add("d-none"));
 
       if (!currentUser || currentUser.role === "guest") {
         guestDiv.classList.remove("d-none");
         userDiv.classList.add("d-none");
+        userActiveReservations = {};
       } else {
         guestDiv.classList.add("d-none");
         userDiv.classList.remove("d-none");
@@ -615,15 +727,19 @@
           userBadge.textContent = "Librarian";
           userIcon.className = "bi bi-person-badge me-1";
           document.querySelectorAll(".librarian-only").forEach(el => el.classList.remove("d-none"));
+          userActiveReservations = {};
         } else if (currentUser.role === "clerk") {
           userName.textContent = "Desk Clerk";
           userBadge.textContent = "Clerk";
           userIcon.className = "bi bi-person-workspace me-1";
           document.querySelectorAll(".clerk-only").forEach(el => el.classList.remove("d-none"));
+          userActiveReservations = {};
         } else if (currentUser.role === "member") {
           userName.textContent = currentUser.memberData ? currentUser.memberData.name : currentUser.code;
           userBadge.textContent = currentUser.memberData ? currentUser.memberData.category : "Member";
           userIcon.className = "bi bi-person-circle me-1";
+          document.querySelectorAll(".member-only").forEach(el => el.classList.remove("d-none"));
+          fetchMyReservations();
         }
       }
       renderBooksTable(allBooks);
@@ -631,6 +747,7 @@
 
     function setRole(role) {
       currentUser = { role: role };
+      userActiveReservations = {};
       bootstrap.Modal.getInstance(document.getElementById("loginModal")).hide();
       showAlert(`Signed in as <strong>${role.toUpperCase()}</strong>.`, "info");
       updateAuthUI();
@@ -657,12 +774,14 @@
       currentUser = { role: "member", code: codeInput, memberData: data };
       bootstrap.Modal.getInstance(document.getElementById("loginModal")).hide();
       showAlert(`Welcome, <strong>${data.name}</strong> (${data.category})!`, "success");
+      await fetchMyReservations();
       updateAuthUI();
       showSection("catalogue");
     }
 
     function logout() {
       currentUser = null;
+      userActiveReservations = {};
       showAlert("You have signed out.", "secondary");
       updateAuthUI();
       showSection("catalogue");
@@ -705,7 +824,16 @@
             actionBtn = `<span class="text-muted small">None free</span>`;
           }
         } else if (currentUser && currentUser.role === "member") {
-          if (b.available_copies === 0) {
+          const userRes = userActiveReservations[b.isbn];
+          if (userRes) {
+            actionBtn = `
+              <div class="d-flex align-items-center gap-1">
+                <span class="badge bg-warning text-dark"><i class="bi bi-bookmark-fill me-1"></i>Reserved</span>
+                <button class="btn btn-sm btn-outline-danger" onclick="cancelReservation(${userRes.id})" title="Cancel your reservation">
+                  <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+              </div>`;
+          } else if (b.available_copies === 0) {
             actionBtn = `<button class="btn btn-sm btn-outline-danger" onclick="reserveBook('${b.isbn}')"><i class="bi bi-bookmark-plus me-1"></i>Reserve</button>`;
           } else {
             actionBtn = `<span class="text-success small fw-semibold"><i class="bi bi-check-circle me-1"></i>Available</span>`;
@@ -1008,6 +1136,8 @@
         showAlert("Error creating reservation: " + error.message, "danger");
       } else {
         showAlert("Reservation placed! You will be placed in the priority hold queue once a copy is returned.", "success");
+        await fetchMyReservations();
+        fetchBooks();
       }
     }
 
@@ -1270,6 +1400,265 @@
             }
           }
         }
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // 12. Reservations Queue (Clerk Read-Only, Librarian Admin)
+    // ─────────────────────────────────────────────
+    async function fetchReservations() {
+      const isClerk = currentUser && currentUser.role === "clerk";
+      const isLibrarian = currentUser && currentUser.role === "librarian";
+
+      // Notice alerts
+      const clerkNotice = document.getElementById("clerkReservationsNotice");
+      const librarianNotice = document.getElementById("librarianReservationsNotice");
+      const actionHeader = document.getElementById("reservationsActionHeader");
+
+      if (isClerk) {
+        if (clerkNotice) clerkNotice.classList.remove("d-none");
+        if (librarianNotice) librarianNotice.classList.add("d-none");
+        if (actionHeader) actionHeader.textContent = "Status / Access";
+      } else if (isLibrarian) {
+        if (clerkNotice) clerkNotice.classList.add("d-none");
+        if (librarianNotice) librarianNotice.classList.remove("d-none");
+        if (actionHeader) actionHeader.textContent = "Action";
+      } else {
+        if (clerkNotice) clerkNotice.classList.add("d-none");
+        if (librarianNotice) librarianNotice.classList.add("d-none");
+      }
+
+      const { data, error } = await sb
+        .from("reservation")
+        .select("*, book(*), member(*)")
+        .in("status", ["Waiting", "Hold"])
+        .order("reservation_date", { ascending: true });
+
+      const tbody = document.getElementById("reservationsTableBody");
+      if (error) {
+        console.error("fetchReservations error:", error);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-danger py-3"><i class="bi bi-exclamation-triangle me-1"></i>Failed to load reservations: ${error.message}</td></tr>`;
+        return;
+      }
+
+      if (!tbody) return;
+
+      if (!data || !data.length) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4"><i class="bi bi-info-circle me-1"></i>No active reservations in the queue.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map((res, idx) => {
+        const isHold = res.status === "Hold";
+        const statusBadge = isHold
+          ? `<span class="badge bg-warning text-dark"><i class="bi bi-bookmark-star-fill me-1"></i>Hold (Ready)</span>`
+          : `<span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Waiting Queue</span>`;
+
+        const holdDeadline = res.hold_until
+          ? `<strong class="text-danger">${res.hold_until}</strong>`
+          : `<span class="text-muted small">Awaiting book return</span>`;
+
+        let actionCell = "";
+        if (isLibrarian) {
+          actionCell = `
+            <button class="btn btn-sm btn-outline-danger" onclick="cancelReservation(${res.id})" title="Cancel reservation">
+              <i class="bi bi-x-circle me-1"></i>Cancel
+            </button>`;
+        } else {
+          // Strictly read-only for clerk and other staff
+          actionCell = `<span class="badge bg-secondary-subtle text-secondary border">View Only</span>`;
+        }
+
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td class="fw-semibold">${res.book ? res.book.title : res.book_isbn}</td>
+            <td><code>${res.book_isbn}</code></td>
+            <td>${res.member ? res.member.name : "—"}</td>
+            <td><code>${res.member_code}</code></td>
+            <td><span class="badge bg-secondary">${res.member ? res.member.category : "—"}</span></td>
+            <td>${statusBadge}</td>
+            <td>${res.reservation_date || "—"}</td>
+            <td>${holdDeadline}</td>
+            <td class="text-end">${actionCell}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ─────────────────────────────────────────────
+    // 13. My Reservations (Member Only)
+    // ─────────────────────────────────────────────
+    async function fetchMyReservations() {
+      const tbody = document.getElementById("myReservationsTableBody");
+      if (!currentUser || currentUser.role !== "member") {
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="bi bi-person-circle fs-3 d-block mb-2 text-secondary"></i>
+                <p class="mb-2">Please sign in with your member code to view your active reservations.</p>
+                <button class="btn btn-sm btn-lis-primary" data-bs-toggle="modal" data-bs-target="#loginModal">
+                  <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+                </button>
+              </td>
+            </tr>`;
+        }
+        return;
+      }
+
+      const { data, error } = await sb
+        .from("reservation")
+        .select("*, book(*)")
+        .eq("member_code", currentUser.code)
+        .in("status", ["Waiting", "Hold"])
+        .order("reservation_date", { ascending: false });
+
+      userActiveReservations = {};
+
+      if (error) {
+        console.error("fetchMyReservations error:", error);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-danger py-3"><i class="bi bi-exclamation-triangle me-1"></i>Failed to load reservations: ${error.message}</td></tr>`;
+        return;
+      }
+
+      (data || []).forEach(res => {
+        userActiveReservations[res.book_isbn] = res;
+      });
+
+      // Refresh catalogue action buttons
+      renderBooksTable(allBooks);
+
+      if (!tbody) return;
+
+      if (!data || !data.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-bookmark me-1"></i>You have no active reservations.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map((res, idx) => {
+        const isHold = res.status === "Hold";
+        const statusBadge = isHold
+          ? `<span class="badge bg-warning text-dark"><i class="bi bi-bookmark-star-fill me-1"></i>Hold (Ready for pickup)</span>`
+          : `<span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Waiting in Queue</span>`;
+
+        const holdDeadline = res.hold_until
+          ? `<strong class="text-danger">${res.hold_until}</strong>`
+          : `<span class="text-muted small">Awaiting book return</span>`;
+
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td class="fw-semibold">${res.book ? res.book.title : res.book_isbn}</td>
+            <td><code>${res.book_isbn}</code></td>
+            <td><span class="badge bg-light text-dark border">${res.book ? res.book.rack_no : "—"}</span></td>
+            <td>${statusBadge}</td>
+            <td>${res.reservation_date || "—"}</td>
+            <td>${holdDeadline}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-danger" onclick="cancelReservation(${res.id})" title="Cancel your reservation">
+                <i class="bi bi-x-circle me-1"></i>Cancel
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ─────────────────────────────────────────────
+    // 14. Cancel Reservation (Member Self-Service & Librarian Admin)
+    // ─────────────────────────────────────────────
+    async function cancelReservation(reservationId) {
+      if (!currentUser) {
+        showAlert("Please sign in first.", "warning");
+        return;
+      }
+
+      // Clerks are forbidden from cancelling or managing reservations
+      if (currentUser.role === "clerk") {
+        showAlert("Clerks do not have permission to cancel reservations.", "danger");
+        return;
+      }
+
+      if (!confirm("Are you sure you want to cancel this reservation?")) {
+        return;
+      }
+
+      // 1. Fetch reservation
+      const { data: res, error: fetchErr } = await sb
+        .from("reservation")
+        .select("*")
+        .eq("id", reservationId)
+        .maybeSingle();
+
+      if (fetchErr || !res) {
+        showAlert("Reservation not found.", "danger");
+        return;
+      }
+
+      // 2. Authorization check: Member can only cancel their own reservation
+      if (currentUser.role === "member" && res.member_code !== currentUser.code) {
+        showAlert("You can only cancel your own reservations.", "danger");
+        return;
+      }
+
+      // 3. Mark reservation as Cancelled (audit trail preserved)
+      const { error: cancelErr } = await sb
+        .from("reservation")
+        .update({ status: "Cancelled" })
+        .eq("id", reservationId);
+
+      if (cancelErr) {
+        showAlert("Failed to cancel reservation: " + cancelErr.message, "danger");
+        return;
+      }
+
+      // 4. Cascade logic if this reservation was on 'Hold'
+      if (res.status === "Hold") {
+        // Find next waiting in FIFO queue for this book
+        const { data: nextWaiting } = await sb
+          .from("reservation")
+          .select("*")
+          .eq("book_isbn", res.book_isbn)
+          .eq("status", "Waiting")
+          .order("reservation_date", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (nextWaiting) {
+          const newHold = new Date();
+          newHold.setDate(new Date().getDate() + HOLD_DAYS);
+          const holdStr = newHold.toISOString().split("T")[0];
+          await sb
+            .from("reservation")
+            .update({ status: "Hold", hold_until: holdStr })
+            .eq("id", nextWaiting.id);
+        } else {
+          // No one waiting, return copy to available stock
+          const { data: bk } = await sb
+            .from("book")
+            .select("available_copies")
+            .eq("isbn", res.book_isbn)
+            .maybeSingle();
+
+          if (bk) {
+            await sb
+              .from("book")
+              .update({ available_copies: bk.available_copies + 1 })
+              .eq("isbn", res.book_isbn);
+          }
+        }
+      }
+
+      showAlert("Reservation cancelled successfully.", "success");
+
+      // Refresh data across views
+      await fetchBooks();
+      if (currentUser.role === "member") {
+        await fetchMyReservations();
+      }
+      if (currentUser.role === "librarian" || currentUser.role === "clerk") {
+        await fetchReservations();
       }
     }
 

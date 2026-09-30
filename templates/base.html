@@ -76,16 +76,18 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('books_delete') }}"><i class="bi bi-trash me-1"></i>Delete Book</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('issue') }}"><i class="bi bi-arrow-up-circle me-1"></i>Issue</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('book_return') }}"><i class="bi bi-arrow-down-circle me-1"></i>Return</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_list') }}"><i class="bi bi-bookmark-check me-1"></i>Reservations</a></li>
         {% endif %}
 
         {% if session_role == 'librarian' %}
         <li class="nav-item"><a class="nav-link" href="{{ url_for('members') }}"><i class="bi bi-people me-1"></i>Members</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_list') }}"><i class="bi bi-bookmark-check me-1"></i>Reservations</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('reports_reminders') }}"><i class="bi bi-bell me-1"></i>Reminders</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('reports_unused') }}"><i class="bi bi-archive me-1"></i>Unused Books</a></li>
         {% endif %}
 
         {% if session_member %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('reserve') }}"><i class="bi bi-bookmark-plus me-1"></i>Reserve</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('reserve') }}"><i class="bi bi-bookmark-plus me-1"></i>My Reservations</a></li>
         {% endif %}
       </ul>
 
@@ -106,6 +108,12 @@
           <a class="nav-link" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
         </li>
       </ul>
+    </div>
+    {% else %}
+    <div class="d-flex align-items-center">
+      <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+      </a>
     </div>
     {% endif %}
   </div>

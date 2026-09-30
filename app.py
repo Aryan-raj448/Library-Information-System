@@ -165,9 +165,25 @@ def require_logged_in():
 def inject_role():
     role = get_session_role()
     member = None
+    my_reserved_isbns = set()
+    my_active_reservations = {}
     if is_member_session():
         member = db.session.get(Member, role)
-    return dict(session_role=role, session_member=member)
+        if member:
+            res_rows = (
+                Reservation.query
+                .filter_by(member_code=member.code)
+                .filter(Reservation.status.in_(["Waiting", "Hold"]))
+                .all()
+            )
+            my_reserved_isbns = {r.book_isbn for r in res_rows}
+            my_active_reservations = {r.book_isbn: r for r in res_rows}
+    return dict(
+        session_role=role,
+        session_member=member,
+        my_reserved_isbns=my_reserved_isbns,
+        my_active_reservations=my_active_reservations
+    )
 
 
 # ─────────────────────────────────────────────
@@ -462,6 +478,31 @@ def book_return():
     return render_template("return.html")
 
 
+def process_reservation_cancellation(reservation):
+    """Cancel a reservation. If it was on Hold, cascade to the next waiting member or return copy to stock."""
+    today = date.today()
+    was_hold = (reservation.status == "Hold")
+    book_isbn = reservation.book_isbn
+    reservation.status = "Cancelled"
+
+    if was_hold:
+        next_waiting = (
+            Reservation.query
+            .filter_by(book_isbn=book_isbn, status="Waiting")
+            .order_by(Reservation.reservation_date)
+            .first()
+        )
+        if next_waiting:
+            next_waiting.status = "Hold"
+            next_waiting.hold_until = today + timedelta(days=HOLD_DAYS)
+        else:
+            book = db.session.get(Book, book_isbn)
+            if book:
+                book.available_copies += 1
+
+    db.session.commit()
+
+
 # ─────────────────────────────────────────────
 #  FR8  /reserve  (member)
 # ─────────────────────────────────────────────
@@ -475,11 +516,11 @@ def reserve():
         book = db.session.get(Book, isbn)
         if not book:
             flash("Book not found.", "danger")
-            return render_template("reserve.html")
+            return redirect(url_for("reserve"))
 
         if book.available_copies > 0:
             flash("Book is currently available — visit the desk to borrow it directly.", "info")
-            return render_template("reserve.html")
+            return redirect(url_for("reserve"))
 
         existing = (
             Reservation.query
@@ -489,7 +530,7 @@ def reserve():
         )
         if existing:
             flash("You already have an active reservation for this book.", "warning")
-            return render_template("reserve.html")
+            return redirect(url_for("reserve"))
 
         res = Reservation(
             book_isbn=isbn,
@@ -500,9 +541,73 @@ def reserve():
         db.session.add(res)
         db.session.commit()
         flash(f"Reservation placed for '{book.title}'. You are in the queue.", "success")
-        return redirect(url_for("search"))
+        return redirect(url_for("reserve"))
 
-    return render_template("reserve.html")
+    active_reservations = (
+        Reservation.query
+        .filter_by(member_code=member_code)
+        .filter(Reservation.status.in_(["Waiting", "Hold"]))
+        .order_by(Reservation.reservation_date)
+        .all()
+    )
+    return render_template("reserve.html", active_reservations=active_reservations, today=date.today())
+
+
+# ─────────────────────────────────────────────
+#  /reservations  (clerk: read-only, librarian: admin view)
+# ─────────────────────────────────────────────
+@app.route("/reservations")
+@require_role("clerk", "librarian")
+def reservations_list():
+    active_reservations = (
+        Reservation.query
+        .filter(Reservation.status.in_(["Hold", "Waiting"]))
+        .order_by(Reservation.book_isbn, Reservation.reservation_date)
+        .all()
+    )
+    return render_template(
+        "reservations/index.html",
+        reservations=active_reservations,
+        today=date.today()
+    )
+
+
+# ─────────────────────────────────────────────
+#  /reservations/cancel  (member can cancel own, librarian can cancel any)
+# ─────────────────────────────────────────────
+@app.route("/reservations/cancel", methods=["POST"])
+def reservations_cancel():
+    role = get_session_role()
+    if not role:
+        abort(403)
+
+    reservation_id = request.form.get("reservation_id")
+    if not reservation_id:
+        flash("Reservation ID required.", "danger")
+        return redirect(request.referrer or url_for("index"))
+
+    res = db.session.get(Reservation, int(reservation_id))
+    if not res or res.status not in ("Waiting", "Hold"):
+        flash("Active reservation not found.", "danger")
+        return redirect(request.referrer or url_for("index"))
+
+    # Role guard:
+    # - Librarian can cancel any reservation
+    # - Member can only cancel their own reservation
+    # - Clerk CANNOT cancel (aborts 403)
+    if role == "librarian":
+        pass
+    elif is_member_session() and res.member_code == role:
+        pass
+    else:
+        abort(403)
+
+    book_title = res.book.title if res.book else res.book_isbn
+    process_reservation_cancellation(res)
+    flash(f"Reservation for '{book_title}' has been cancelled.", "success")
+    default_target = url_for("reservations_list") if role == "librarian" else url_for("reserve")
+    return redirect(request.referrer or default_target)
+
 
 
 # ─────────────────────────────────────────────

@@ -2,22 +2,39 @@
 {% block title %}Search Catalogue{% endblock %}
 
 {% block content %}
-<h3 class="mb-4 fw-bold"><i class="bi bi-search me-2"></i>Search Catalogue</h3>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h3 class="fw-bold mb-1"><i class="bi bi-search me-2"></i>Search Catalogue</h3>
+    <p class="text-muted mb-0">Browse titles and check copy availability across the library</p>
+  </div>
+  {% if not session_role %}
+  <a href="{{ url_for('login') }}" class="btn btn-outline-dark btn-sm">
+    <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+  </a>
+  {% endif %}
+</div>
 
 <form method="GET" action="{{ url_for('search') }}" class="mb-4">
   <div class="input-group input-group-lg shadow-sm">
     <input type="text" class="form-control" name="q"
            placeholder="Search by ISBN, title, or author…"
            value="{{ q }}" autofocus>
-    <button class="btn btn-lis-primary" type="submit">Search</button>
+    <button class="btn btn-lis-primary" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+    {% if q %}
+    <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">Clear</a>
+    {% endif %}
   </div>
 </form>
 
-{% if q %}
-  {% if books %}
-  <p class="text-muted">{{ books|length }} result(s) for "<strong>{{ q }}</strong>"</p>
-  <div class="table-responsive">
-    <table class="table table-hover align-middle bg-white rounded shadow-sm">
+{% if books %}
+  {% if q %}
+  <p class="text-muted"><i class="bi bi-funnel me-1"></i>{{ books|length }} result(s) for "<strong>{{ q }}</strong>"</p>
+  {% else %}
+  <p class="text-muted"><i class="bi bi-collection me-1"></i>Showing all {{ books|length }} books in catalogue</p>
+  {% endif %}
+
+  <div class="table-responsive bg-white rounded shadow-sm">
+    <table class="table table-hover align-middle mb-0">
       <thead class="table-dark">
         <tr>
           <th>ISBN</th>
@@ -25,45 +42,73 @@
           <th>Author</th>
           <th>Publisher</th>
           <th>Rack</th>
-          <th>Copies</th>
-          <th>Available</th>
-          {% if session_role in ('clerk',) %}<th></th>{% endif %}
+          <th>Total Copies</th>
+          <th>Availability</th>
+          <th class="text-end">Action</th>
         </tr>
       </thead>
       <tbody>
         {% for b in books %}
         <tr>
           <td><code>{{ b.isbn }}</code></td>
-          <td>{{ b.title }}</td>
+          <td class="fw-semibold">{{ b.title }}</td>
           <td>{{ b.author }}</td>
           <td>{{ b.publisher or '—' }}</td>
-          <td>{{ b.rack_no }}</td>
+          <td><span class="badge bg-light text-dark border">{{ b.rack_no }}</span></td>
           <td>{{ b.total_copies }}</td>
           <td>
             {% if b.available_copies > 0 %}
-              <span class="badge bg-success">{{ b.available_copies }}</span>
+              <span class="badge bg-success">{{ b.available_copies }} available</span>
             {% else %}
-              <span class="badge bg-danger">0</span>
+              <span class="badge bg-danger">0 available</span>
             {% endif %}
           </td>
-          {% if session_role == 'clerk' %}
-          <td>
-            <a href="{{ url_for('issue') }}" class="btn btn-sm btn-lis-primary">Issue</a>
+          <td class="text-end">
+            {% if session_role == 'clerk' %}
+              {% if b.available_copies > 0 %}
+              <a href="{{ url_for('issue') }}" class="btn btn-sm btn-lis-primary">Issue</a>
+              {% else %}
+              <span class="text-muted small">None free</span>
+              {% endif %}
+            {% elif session_member %}
+              {% if b.isbn in my_reserved_isbns %}
+                {% set res_obj = my_active_reservations.get(b.isbn) %}
+                <span class="badge bg-warning text-dark me-1">
+                  {% if res_obj and res_obj.status == 'Hold' %}Hold{% else %}Waiting{% endif %}
+                </span>
+                <form method="POST" action="{{ url_for('reservations_cancel') }}" class="d-inline" onsubmit="return confirm('Cancel your reservation for {{ b.title }}?')">
+                  <input type="hidden" name="reservation_id" value="{{ res_obj.id if res_obj else '' }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                </form>
+              {% elif b.available_copies == 0 %}
+                <form method="POST" action="{{ url_for('reserve') }}" class="d-inline">
+                  <input type="hidden" name="isbn" value="{{ b.isbn }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-bookmark-plus me-1"></i>Reserve
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-success small fw-semibold"><i class="bi bi-check2"></i> Available</span>
+              {% endif %}
+            {% else %}
+              {% if b.available_copies == 0 %}
+                <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-secondary">Sign in to reserve</a>
+              {% else %}
+                <span class="text-success small fw-semibold"><i class="bi bi-check2"></i> Available</span>
+              {% endif %}
+            {% endif %}
           </td>
-          {% endif %}
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  {% else %}
-  <div class="alert alert-info">No books found for "<strong>{{ q }}</strong>".</div>
-  {% endif %}
 {% else %}
-  <div class="text-center text-muted mt-5">
-    <i class="bi bi-journal-bookmark display-3"></i>
-    <p class="mt-3">Enter a search term above to find books.</p>
-  </div>
+  {% if q %}
+  <div class="alert alert-info">No books found for "<strong>{{ q }}</strong>". <a href="{{ url_for('search') }}">View all books</a>.</div>
+  {% else %}
+  <div class="alert alert-warning">No books in the catalogue yet.</div>
+  {% endif %}
 {% endif %}
 {% endblock %}
 

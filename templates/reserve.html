@@ -1,14 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Reserve Book{% endblock %}
+{% block title %}Reserve Book & My Reservations{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow-sm p-4">
-      <h3 class="fw-bold mb-2"><i class="bi bi-bookmark-plus me-2"></i>Reserve a Book</h3>
-      <p class="text-muted mb-4">
-        You can only reserve books with <strong>no available copies</strong>.
-        When a copy is returned, you'll be next in line (held for 7 days).
+<div class="row justify-content-center g-4">
+  <!-- Place Reservation Form -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm p-4 bg-white h-100">
+      <h4 class="fw-bold mb-2"><i class="bi bi-bookmark-plus text-primary me-2"></i>Reserve a Book</h4>
+      <p class="text-muted small mb-4">
+        You can only reserve books with <strong>0 available copies</strong>.
+        When a copy is returned, it will be placed on hold for you for 7 days.
       </p>
 
       <form method="POST" action="{{ url_for('reserve') }}">
@@ -16,19 +17,84 @@
           <label class="form-label fw-semibold">Book ISBN <span class="text-danger">*</span></label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
-            <input type="text" name="isbn" class="form-control form-control-lg"
-                   placeholder="Enter ISBN of book to reserve"
+            <input type="text" name="isbn" class="form-control"
+                   placeholder="e.g. 978-0-13-468599-1"
                    required autofocus autocomplete="off">
           </div>
-          <div class="form-text">Use the <a href="{{ url_for('search') }}">Search Catalogue</a> to find the ISBN.</div>
+          <div class="form-text">Browse the <a href="{{ url_for('index') }}">Catalogue</a> to find books.</div>
         </div>
 
-        <div class="d-grid mt-4">
-          <button type="submit" class="btn btn-lis-primary btn-lg">
-            <i class="bi bi-bookmark-check me-2"></i>Place Reservation
-          </button>
-        </div>
+        <button type="submit" class="btn btn-lis-primary w-100 mt-3">
+          <i class="bi bi-bookmark-check me-1"></i>Place Reservation
+        </button>
       </form>
+    </div>
+  </div>
+
+  <!-- My Active Reservations List -->
+  <div class="col-lg-7">
+    <div class="card shadow-sm p-4 bg-white h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0"><i class="bi bi-clock-history text-warning me-2"></i>My Active Reservations</h4>
+        <span class="badge bg-secondary">{{ active_reservations|length if active_reservations else 0 }}</span>
+      </div>
+
+      {% if active_reservations %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Book Title</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Hold Deadline</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in active_reservations %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ r.book.title if r.book else r.book_isbn }}</div>
+                <small class="text-muted"><code>{{ r.book_isbn }}</code></small>
+              </td>
+              <td>
+                {% if r.status == 'Hold' %}
+                  <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>On Hold</span>
+                {% else %}
+                  <span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Waiting</span>
+                {% endif %}
+              </td>
+              <td class="small">{{ r.reservation_date.strftime('%d %b %Y') }}</td>
+              <td>
+                {% if r.status == 'Hold' and r.hold_until %}
+                  <strong class="text-danger small">{{ r.hold_until.strftime('%d %b %Y') }}</strong>
+                  {% set days_left = (r.hold_until - today).days %}
+                  <span class="badge bg-light text-dark border ms-1">{{ days_left }}d left</span>
+                {% else %}
+                  <span class="text-muted small">In line</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <form method="POST" action="{{ url_for('reservations_cancel') }}" onsubmit="return confirm('Are you sure you want to cancel this reservation?')">
+                  <input type="hidden" name="reservation_id" value="{{ r.id }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-4 text-muted">
+        <i class="bi bi-bookmark display-6 d-block mb-2 text-muted"></i>
+        <p class="mb-0">You have no active reservations.</p>
+        <small>When you reserve a book, it will appear here with its hold status.</small>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
